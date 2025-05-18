@@ -215,7 +215,7 @@ export function TransactionsTable() {
                   <span
                     className={cn(transaction.type === "income" ? "text-green-500" : "text-red-500", "font-medium")}
                   >
-                    ${Number.parseFloat(transaction.amount.toString()).toFixed(2)}
+                    PHP {Number.parseFloat(transaction.amount.toString()).toFixed(2)}
                   </span>
                 </div>
               </div>
