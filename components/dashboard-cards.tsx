@@ -111,7 +111,7 @@ export function DashboardCards() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            ${Number.parseFloat(data.summary.balance.value.toString()).toFixed(2)}
+            PHP {Number.parseFloat(data.summary.balance.value.toString()).toFixed(2)}
           </div>
           <p className="text-xs text-muted-foreground">
             {Number.parseFloat(data.summary.balance.change) > 0 ? "+" : ""}
@@ -137,7 +137,7 @@ export function DashboardCards() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            PHP{Number.parseFloat(data.summary.income.value.toString()).toFixed(2)}
+            PHP {Number.parseFloat(data.summary.income.value.toString()).toFixed(2)}
           </div>
           <p className="text-xs text-muted-foreground">
             {Number.parseFloat(data.summary.income.change) > 0 ? "+" : ""}
@@ -163,7 +163,7 @@ export function DashboardCards() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            PHP{Number.parseFloat(data.summary.expenses.value.toString()).toFixed(2)}
+            PHP {Number.parseFloat(data.summary.expenses.value.toString()).toFixed(2)}
           </div>
           <p className="text-xs text-muted-foreground">
             {Number.parseFloat(data.summary.expenses.change) > 0 ? "+" : ""}
@@ -190,7 +190,7 @@ export function DashboardCards() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            PHP{Number.parseFloat(data.summary.budget.remaining.toString()).toFixed(2)}
+            PHP {Number.parseFloat(data.summary.budget.remaining.toString()).toFixed(2)}
           </div>
           <p className="text-xs text-muted-foreground">{data.summary.budget.percentage}% of budget used</p>
         </CardContent>
