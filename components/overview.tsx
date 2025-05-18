@@ -68,7 +68,7 @@ export function Overview() {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="month" />
         <YAxis />
-        <Tooltip formatter={(value) => `$${value}`} />
+        <Tooltip formatter={(value) => `PHP${value}`} />
         <Legend />
         <Bar dataKey="income" name="Income" fill="#22c55e" radius={[4, 4, 0, 0]} />
         <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
