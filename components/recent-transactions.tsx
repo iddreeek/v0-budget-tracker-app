@@ -131,7 +131,7 @@ export function RecentTransactions() {
                   <ArrowDownIcon className="mr-1 h-4 w-4 text-red-500" />
                 )}
                 <span className={cn(transaction.type === "income" ? "text-green-500" : "text-red-500")}>
-                  ${Number.parseFloat(transaction.amount.toString()).toFixed(2)}
+                  PHP{Number.parseFloat(transaction.amount.toString()).toFixed(2)}
                 </span>
               </div>
             </TableCell>
