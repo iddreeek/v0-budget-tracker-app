@@ -89,7 +89,7 @@ export function CategoryBreakdown() {
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
         </Pie>
-        <Tooltip formatter={(value) => `$${value}`} />
+        <Tooltip formatter={(value) => `PHP${value}`} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>
