@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { useDateRange } from "@/contexts/date-range-context"
 import { CalendarIcon } from "lucide-react"
+import { formatCurrency } from "@/lib/format"
 
 type BudgetData = {
   id: number
@@ -112,8 +113,7 @@ export function BudgetProgress() {
               </div>
             </div>
             <span className="text-sm text-muted-foreground">
-              ${Number.parseFloat(item.spent.toString()).toFixed(2)} / $
-              {Number.parseFloat(item.budget.toString()).toFixed(2)}
+              {formatCurrency(item.spent)} / {formatCurrency(item.budget)}
             </span>
           </div>
           <Progress

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { useDateRange } from "@/contexts/date-range-context"
+import { formatCurrency } from "@/lib/format"
 
 type DashboardData = {
   summary: {
@@ -110,9 +111,7 @@ export function DashboardCards() {
           </svg>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            PHP {Number.parseFloat(data.summary.balance.value.toString()).toFixed(2)}
-          </div>
+          <div className="text-2xl font-bold">{formatCurrency(data.summary.balance.value)}</div>
           <p className="text-xs text-muted-foreground">
             {Number.parseFloat(data.summary.balance.change) > 0 ? "+" : ""}
             {data.summary.balance.change}% from previous period
@@ -136,9 +135,7 @@ export function DashboardCards() {
           </svg>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            PHP {Number.parseFloat(data.summary.income.value.toString()).toFixed(2)}
-          </div>
+          <div className="text-2xl font-bold">{formatCurrency(data.summary.income.value)}</div>
           <p className="text-xs text-muted-foreground">
             {Number.parseFloat(data.summary.income.change) > 0 ? "+" : ""}
             {data.summary.income.change}% from previous period
@@ -162,9 +159,7 @@ export function DashboardCards() {
           </svg>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            PHP {Number.parseFloat(data.summary.expenses.value.toString()).toFixed(2)}
-          </div>
+          <div className="text-2xl font-bold">{formatCurrency(data.summary.expenses.value)}</div>
           <p className="text-xs text-muted-foreground">
             {Number.parseFloat(data.summary.expenses.change) > 0 ? "+" : ""}
             {data.summary.expenses.change}% from previous period
@@ -189,9 +184,7 @@ export function DashboardCards() {
           </svg>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            PHP {Number.parseFloat(data.summary.budget.remaining.toString()).toFixed(2)}
-          </div>
+          <div className="text-2xl font-bold">{formatCurrency(data.summary.budget.remaining)}</div>
           <p className="text-xs text-muted-foreground">{data.summary.budget.percentage}% of budget used</p>
         </CardContent>
       </Card>

@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { useDateRange } from "@/contexts/date-range-context"
+import { formatCurrency } from "@/lib/format"
 
 type Transaction = {
   id: number
@@ -131,7 +132,7 @@ export function RecentTransactions() {
                   <ArrowDownIcon className="mr-1 h-4 w-4 text-red-500" />
                 )}
                 <span className={cn(transaction.type === "income" ? "text-green-500" : "text-red-500")}>
-                  PHP {Number.parseFloat(transaction.amount.toString()).toFixed(2)}
+                  {formatCurrency(transaction.amount)}
                 </span>
               </div>
             </TableCell>

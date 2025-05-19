@@ -55,6 +55,17 @@ export async function GET() {
     const insertedCategories = await sql`SELECT * FROM categories ORDER BY name`
     console.log("Inserted categories:", insertedCategories)
 
+    // Create budget_allocations table if it doesn't exist
+    await sql`
+      CREATE TABLE IF NOT EXISTS budget_allocations (
+        id SERIAL PRIMARY KEY,
+        budget_id INTEGER NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
+        transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+        amount DECIMAL(10, 2) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `
+
     return NextResponse.json({
       success: true,
       message: "Database seeded successfully",

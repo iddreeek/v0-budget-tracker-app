@@ -23,6 +23,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
 import { useDateRange } from "@/contexts/date-range-context"
+import { formatCurrency } from "@/lib/format"
 
 type Budget = {
   id: number
@@ -228,9 +229,7 @@ export function BudgetsTable() {
                     indicatorClassName={budget.percentage > 100 ? "bg-destructive" : ""}
                   />
                   <div className="flex justify-between mt-1">
-                    <span className="text-xs text-muted-foreground">
-                      ${Number.parseFloat(budget.spent.toString()).toFixed(2)} spent
-                    </span>
+                    <span className="text-xs text-muted-foreground">{formatCurrency(budget.spent)} spent</span>
                     <span className="text-xs text-muted-foreground">{Math.round(budget.percentage)}% of budget</span>
                   </div>
                 </div>
@@ -238,12 +237,12 @@ export function BudgetsTable() {
               <div className="p-4 flex flex-col space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Budget:</span>
-                  <span className="font-medium">${Number.parseFloat(budget.budget.toString()).toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(budget.budget)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Remaining:</span>
                   <span className={budget.remaining < 0 ? "text-red-500 font-medium" : "font-medium"}>
-                    ${Number.parseFloat(budget.remaining.toString()).toFixed(2)}
+                    {formatCurrency(budget.remaining)}
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
@@ -307,12 +306,10 @@ export function BudgetsTable() {
                   {formatDateRange(budget.start_date, budget.end_date)}
                 </div>
               </TableCell>
-              <TableCell className="text-right">${Number.parseFloat(budget.budget.toString()).toFixed(2)}</TableCell>
-              <TableCell className="text-right">${Number.parseFloat(budget.spent.toString()).toFixed(2)}</TableCell>
+              <TableCell className="text-right">{formatCurrency(budget.budget)}</TableCell>
+              <TableCell className="text-right">{formatCurrency(budget.spent)}</TableCell>
               <TableCell className="text-right">
-                <span className={budget.remaining < 0 ? "text-red-500" : ""}>
-                  ${Number.parseFloat(budget.remaining.toString()).toFixed(2)}
-                </span>
+                <span className={budget.remaining < 0 ? "text-red-500" : ""}>{formatCurrency(budget.remaining)}</span>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
