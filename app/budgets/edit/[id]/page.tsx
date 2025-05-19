@@ -8,7 +8,7 @@ import { Search } from "@/components/search"
 import { UserNav } from "@/components/user-nav"
 import { BudgetForm } from "@/components/budget-form"
 import { sql } from "@/lib/db"
-import { BudgetAllocationsTable } from "@/components/budget-allocations-table"
+import { BudgetSpendingTable } from "@/components/budget-spending-table"
 
 export const metadata: Metadata = {
   title: "Edit Budget - Budget Tracker",
@@ -69,8 +69,8 @@ export default async function EditBudgetPage({ params }: { params: { id: string 
           <BudgetForm budget={budget} />
         </div>
         <div className="mt-8">
-          <h3 className="text-xl font-bold mb-4">Budget Allocations</h3>
-          <BudgetAllocationsTable budgetId={budget.id} />
+          <h3 className="text-xl font-bold mb-4">Budget Spending</h3>
+          <BudgetSpendingTable budgetId={budget.id} />
         </div>
       </div>
     </div>

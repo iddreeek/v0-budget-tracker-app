@@ -5,6 +5,7 @@ import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recha
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { useDateRange } from "@/contexts/date-range-context"
+import { formatCurrency } from "@/lib/format"
 
 type CategoryData = {
   name: string
@@ -60,6 +61,11 @@ export function CategoryBreakdown() {
     return date.toISOString().split("T")[0]
   }
 
+  // Custom formatter for tooltip values
+  const formatTooltipValue = (value: number) => {
+    return formatCurrency(value)
+  }
+
   if (loading) {
     return <Skeleton className="h-[300px] w-full" />
   }
@@ -89,7 +95,7 @@ export function CategoryBreakdown() {
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
         </Pie>
-        <Tooltip formatter={(value) => `$${value}`} />
+        <Tooltip formatter={formatTooltipValue} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>

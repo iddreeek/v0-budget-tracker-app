@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button"
 import { MainNav } from "@/components/main-nav"
 import { Search } from "@/components/search"
 import { UserNav } from "@/components/user-nav"
-import { BudgetsTable } from "@/components/budgets-table"
+import { SpendBudgetForm } from "@/components/spend-budget-form"
 
 export const metadata: Metadata = {
-  title: "Budgets - Budget Tracker",
-  description: "Manage your budget categories and limits.",
+  title: "Spend from Budget - Budget Tracker",
+  description: "Record spending from your budget categories.",
 }
 
-export default function BudgetsPage() {
+export default function SpendBudgetPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <div className="border-b">
@@ -26,17 +26,16 @@ export default function BudgetsPage() {
       </div>
       <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Budgets</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Spend from Budget</h2>
           <div className="flex items-center space-x-2">
-            <Link href="/budgets/spend">
-              <Button variant="outline">Spend from Budget</Button>
-            </Link>
-            <Link href="/budgets/new">
-              <Button>Add Budget</Button>
+            <Link href="/budgets">
+              <Button variant="outline">Cancel</Button>
             </Link>
           </div>
         </div>
-        <BudgetsTable />
+        <div className="mx-auto max-w-2xl">
+          <SpendBudgetForm />
+        </div>
       </div>
     </div>
   )

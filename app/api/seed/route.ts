@@ -55,14 +55,15 @@ export async function GET() {
     const insertedCategories = await sql`SELECT * FROM categories ORDER BY name`
     console.log("Inserted categories:", insertedCategories)
 
-    // Create budget_allocations table if it doesn't exist
+    // Create budget_spending table if it doesn't exist
     await sql`
-      CREATE TABLE IF NOT EXISTS budget_allocations (
+      CREATE TABLE IF NOT EXISTS budget_spending (
         id SERIAL PRIMARY KEY,
         budget_id INTEGER NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
         transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
         amount DECIMAL(10, 2) NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(budget_id, transaction_id)
       );
     `
 

@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { useDateRange } from "@/contexts/date-range-context"
+import { formatCurrency } from "@/lib/format"
 
 type MonthlyData = {
   month: string
@@ -50,6 +51,11 @@ export function Overview() {
     return date.toISOString().split("T")[0]
   }
 
+  // Custom formatter for tooltip values
+  const formatTooltipValue = (value: number) => {
+    return formatCurrency(value)
+  }
+
   if (loading) {
     return <Skeleton className="h-[350px] w-full" />
   }
@@ -67,8 +73,8 @@ export function Overview() {
       <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="month" />
-        <YAxis />
-        <Tooltip formatter={(value) => `$${value}`} />
+        <YAxis tickFormatter={(value) => `₱${value}`} />
+        <Tooltip formatter={formatTooltipValue} />
         <Legend />
         <Bar dataKey="income" name="Income" fill="#22c55e" radius={[4, 4, 0, 0]} />
         <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
