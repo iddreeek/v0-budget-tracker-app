@@ -74,13 +74,21 @@ export function CalendarDateRangePicker({ className }: React.HTMLAttributes<HTML
               defaultMonth={dateRange?.from}
               selected={dateRange}
               onSelect={(range) => {
-                setDateRange(range || getCurrentMonth())
+                // Ensure we always have a complete range
+                if (range?.from && !range.to) {
+                  // If only from date is selected, set to date to the same day
+                  setDateRange({ from: range.from, to: range.from })
+                } else {
+                  setDateRange(range || getCurrentMonth())
+                }
+
+                // Only close if we have a complete range
                 if (range?.from && range?.to) {
                   setCalendarOpen(false)
                 }
               }}
-              numberOfMonths={1}
-              className="sm:block hidden"
+              numberOfMonths={2}
+              className="hidden sm:block"
             />
             <Calendar
               initialFocus
@@ -88,7 +96,15 @@ export function CalendarDateRangePicker({ className }: React.HTMLAttributes<HTML
               defaultMonth={dateRange?.from}
               selected={dateRange}
               onSelect={(range) => {
-                setDateRange(range || getCurrentMonth())
+                // Ensure we always have a complete range
+                if (range?.from && !range.to) {
+                  // If only from date is selected, set to date to the same day
+                  setDateRange({ from: range.from, to: range.from })
+                } else {
+                  setDateRange(range || getCurrentMonth())
+                }
+
+                // Only close if we have a complete range
                 if (range?.from && range?.to) {
                   setCalendarOpen(false)
                 }

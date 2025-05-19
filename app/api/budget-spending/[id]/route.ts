@@ -34,6 +34,56 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const id = params.id
+    const { budget_id, amount } = await request.json()
+
+    // Validate required fields
+    if (!budget_id || !amount) {
+      return NextResponse.json({ message: "Budget ID and amount are required" }, { status: 400 })
+    }
+
+    // Start a transaction
+    await sql`BEGIN`
+
+    try {
+      // Check if the budget exists
+      const budgetCheck = await sql`
+        SELECT * FROM budgets WHERE id = ${budget_id}
+      `
+
+      if (budgetCheck.length === 0) {
+        throw new Error("Budget not found")
+      }
+
+      // Update the budget spending record
+      const result = await sql`
+        UPDATE budget_spending
+        SET budget_id = ${budget_id}, amount = ${amount}
+        WHERE id = ${id}
+        RETURNING *
+      `
+
+      if (result.length === 0) {
+        return NextResponse.json({ message: "Budget spending not found" }, { status: 404 })
+      }
+
+      // Commit the transaction
+      await sql`COMMIT`
+
+      return NextResponse.json(result[0])
+    } catch (error) {
+      // Rollback the transaction in case of error
+      await sql`ROLLBACK`
+      throw error
+    }
+  } catch (error) {
+    console.error("Error updating budget spending:", error)
+    return NextResponse.json({ message: "Failed to update budget spending", error: String(error) }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const id = params.id

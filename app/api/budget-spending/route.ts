@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         throw new Error("Budget not found")
       }
 
-      // Check if the budget has enough remaining
+      // We'll allow exceeding the budget, but we'll log it
       const budgetRemaining = await sql`
         SELECT 
           b.amount as budget,
@@ -88,10 +88,6 @@ export async function POST(request: NextRequest) {
         WHERE b.id = ${budget_id}
         GROUP BY b.id, b.amount
       `
-
-      if (budgetRemaining.length === 0 || budgetRemaining[0].remaining < amount) {
-        throw new Error("Insufficient budget remaining")
-      }
 
       // Create the budget spending record
       const spending = await sql`

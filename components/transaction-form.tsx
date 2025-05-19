@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, PlusCircle } from "lucide-react"
 import { format } from "date-fns"
 
 import { cn } from "@/lib/utils"
@@ -18,6 +18,17 @@ import { Calendar } from "@/components/ui/calendar"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { formatCurrency } from "@/lib/format"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const formSchema = z.object({
   description: z.string().min(2, {
@@ -34,6 +45,18 @@ const formSchema = z.object({
   notes: z.string().optional(),
 })
 
+const budgetFormSchema = z.object({
+  amount: z.coerce.number().positive({
+    message: "Budget amount must be a positive number.",
+  }),
+  start_date: z.date({
+    required_error: "Start date is required.",
+  }),
+  end_date: z.date({
+    required_error: "End date is required.",
+  }),
+})
+
 type Category = {
   id: number
   name: string
@@ -46,6 +69,31 @@ export function TransactionForm({ transaction = null }: { transaction?: any }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [seeding, setSeeding] = useState(false)
+  const [selectedBudget, setSelectedBudget] = useState<any>(null)
+  const [budgetWarning, setBudgetWarning] = useState<string | null>(null)
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false)
+  const [createBudget, setCreateBudget] = useState(false)
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      description: transaction?.description || "",
+      amount: transaction?.amount || undefined,
+      date: transaction?.date ? new Date(transaction.date) : new Date(),
+      type: transaction?.type || "expense",
+      category_id: transaction?.category_id?.toString() || "",
+      notes: transaction?.notes || "",
+    },
+  })
+
+  const budgetForm = useForm<z.infer<typeof budgetFormSchema>>({
+    resolver: zodResolver(budgetFormSchema),
+    defaultValues: {
+      amount: undefined,
+      start_date: new Date(),
+      end_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), // Last day of current month
+    },
+  })
 
   // First, let's seed the categories if needed
   useEffect(() => {
@@ -110,17 +158,62 @@ export function TransactionForm({ transaction = null }: { transaction?: any }) {
     seedCategories()
   }, [])
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      description: transaction?.description || "",
-      amount: transaction?.amount || undefined,
-      date: transaction?.date ? new Date(transaction.date) : new Date(),
-      type: transaction?.type || "expense",
-      category_id: transaction?.category_id?.toString() || "",
-      notes: transaction?.notes || "",
-    },
-  })
+  // Check budget when category or amount changes
+  useEffect(() => {
+    const checkBudget = async () => {
+      const type = form.watch("type")
+      const categoryId = form.watch("category_id")
+      const amount = form.watch("amount")
+
+      // Only check budget for expense transactions
+      if (type !== "expense" || !categoryId || !amount) {
+        setSelectedBudget(null)
+        setBudgetWarning(null)
+        return
+      }
+
+      try {
+        // Use transaction date if editing, otherwise use today
+        const checkDate = form.watch("date")
+          ? form.watch("date").toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0]
+
+        const response = await fetch(`/api/budgets/by-category/${categoryId}?date=${checkDate}`)
+
+        if (response.ok) {
+          const budget = await response.json()
+
+          if (budget) {
+            setSelectedBudget(budget)
+
+            // If editing, we need to account for the current transaction amount
+            let adjustedRemaining = budget.remaining
+            if (transaction && transaction.type === "expense" && transaction.category_id.toString() === categoryId) {
+              // Add back the current transaction amount since it's already counted in spent
+              adjustedRemaining += transaction.amount
+            }
+
+            // Check if expense exceeds remaining budget
+            if (adjustedRemaining < amount) {
+              setBudgetWarning(
+                `This expense exceeds your remaining budget by ${formatCurrency(amount - adjustedRemaining)}`,
+              )
+            } else {
+              setBudgetWarning(null)
+            }
+          } else {
+            setSelectedBudget(null)
+            setBudgetWarning("No budget found for this category")
+          }
+        }
+      } catch (error) {
+        console.error("Error checking budget:", error)
+        setSelectedBudget(null)
+      }
+    }
+
+    checkBudget()
+  }, [form, transaction])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true)
@@ -146,6 +239,108 @@ export function TransactionForm({ transaction = null }: { transaction?: any }) {
         throw new Error(errorData.message || "Failed to save transaction")
       }
 
+      const savedTransaction = await response.json()
+
+      // Handle budget creation for income transactions
+      if (values.type === "income" && createBudget) {
+        try {
+          const budgetValues = budgetForm.getValues()
+
+          await fetch("/api/budgets", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              category_id: Number.parseInt(values.category_id),
+              amount: budgetValues.amount,
+              start_date: formatDateForAPI(budgetValues.start_date),
+              end_date: formatDateForAPI(budgetValues.end_date),
+            }),
+          })
+
+          toast({
+            title: "Budget created",
+            description: "A new budget has been created for this category.",
+          })
+        } catch (error) {
+          console.error("Error creating budget:", error)
+          toast({
+            title: "Budget creation failed",
+            description: "The transaction was saved, but budget creation failed.",
+            variant: "destructive",
+          })
+        }
+      }
+
+      // Handle budget spending for expense transactions
+      if (values.type === "expense") {
+        try {
+          // Find the budget for this category
+          const checkDate = values.date.toISOString().split("T")[0]
+
+          const budgetResponse = await fetch(`/api/budgets/by-category/${values.category_id}?date=${checkDate}`)
+
+          if (budgetResponse.ok) {
+            const budget = await budgetResponse.json()
+
+            if (budget && budget.id) {
+              if (transaction) {
+                // If editing, check if there's an existing budget spending record
+                const spendingResponse = await fetch(`/api/budget-spending/by-transaction/${transaction.id}`)
+
+                if (spendingResponse.ok) {
+                  const existingSpending = await spendingResponse.json()
+
+                  if (existingSpending && existingSpending.id) {
+                    // Update existing spending record
+                    await fetch(`/api/budget-spending/${existingSpending.id}`, {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        budget_id: budget.id,
+                        amount: values.amount,
+                      }),
+                    })
+                  } else {
+                    // Create new spending record for existing transaction
+                    await fetch("/api/budget-spending", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        budget_id: budget.id,
+                        transaction_id: transaction.id,
+                        amount: values.amount,
+                      }),
+                    })
+                  }
+                }
+              } else {
+                // Create a budget spending record for new transaction
+                await fetch("/api/budget-spending", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    budget_id: budget.id,
+                    transaction_id: savedTransaction.id,
+                    amount: values.amount,
+                  }),
+                })
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error linking expense to budget:", error)
+          // Don't block the transaction save if budget linking fails
+        }
+      }
+
       toast({
         title: transaction ? "Transaction updated" : "Transaction added",
         description: transaction
@@ -165,6 +360,11 @@ export function TransactionForm({ transaction = null }: { transaction?: any }) {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Format date to YYYY-MM-DD
+  const formatDateForAPI = (date: Date): string => {
+    return date.toISOString().split("T")[0]
   }
 
   return (
@@ -245,7 +445,16 @@ export function TransactionForm({ transaction = null }: { transaction?: any }) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={(value) => {
+                    field.onChange(value)
+                    // Reset create budget flag when switching types
+                    if (value !== "income") {
+                      setCreateBudget(false)
+                    }
+                  }}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select transaction type" />
@@ -308,6 +517,190 @@ export function TransactionForm({ transaction = null }: { transaction?: any }) {
             </FormItem>
           )}
         />
+
+        {/* Budget section for expense transactions */}
+        {form.watch("type") === "expense" && (
+          <div className="space-y-2">
+            {selectedBudget ? (
+              <div className={`p-4 rounded-md ${budgetWarning ? "bg-red-50" : "bg-muted"}`}>
+                <h3 className="font-medium mb-2">Budget Impact</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>Category:</div>
+                  <div>{selectedBudget.category}</div>
+                  <div>Budget:</div>
+                  <div>{formatCurrency(selectedBudget.budget)}</div>
+                  <div>Already Spent:</div>
+                  <div>{formatCurrency(selectedBudget.spent)}</div>
+                  <div>Remaining:</div>
+                  <div className={selectedBudget.remaining < 0 ? "text-red-500" : ""}>
+                    {formatCurrency(selectedBudget.remaining)}
+                  </div>
+                  {budgetWarning && (
+                    <>
+                      <div className="text-red-500 font-medium">Warning:</div>
+                      <div className="text-red-500">{budgetWarning}</div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              form.watch("category_id") && (
+                <div className="p-4 bg-yellow-50 rounded-md">
+                  <p className="text-yellow-700">No budget found for this category and date range.</p>
+                </div>
+              )
+            )}
+          </div>
+        )}
+
+        {/* Budget creation option for income transactions */}
+        {form.watch("type") === "income" && form.watch("category_id") && (
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="create-budget"
+                checked={createBudget}
+                onCheckedChange={(checked) => {
+                  setCreateBudget(checked === true)
+                  if (checked) {
+                    setBudgetDialogOpen(true)
+                  }
+                }}
+              />
+              <label
+                htmlFor="create-budget"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Create a budget for this category
+              </label>
+            </div>
+
+            {createBudget && (
+              <Dialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" type="button" className="mt-2">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Configure Budget
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Create Budget</DialogTitle>
+                    <DialogDescription>
+                      Set up a budget for the selected category. This budget will be created when you save the
+                      transaction.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <Form {...budgetForm}>
+                    <form className="space-y-4 py-4">
+                      <FormField
+                        control={budgetForm.control}
+                        name="amount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Budget Amount</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={budgetForm.control}
+                          name="start_date"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Start Date</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant={"outline"}
+                                      className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground",
+                                      )}
+                                    >
+                                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={budgetForm.control}
+                          name="end_date"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>End Date</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant={"outline"}
+                                      className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground",
+                                      )}
+                                    >
+                                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </form>
+                  </Form>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const result = budgetForm.trigger()
+                        if (result) {
+                          setBudgetDialogOpen(false)
+                        }
+                      }}
+                    >
+                      Save Budget Settings
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+        )}
+
         <Button
           type="submit"
           className="w-full"
